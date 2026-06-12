@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resource Management & Active Pursuits Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --primary:#1F4E79;
+    --primary-light:#EAF1F8;
+    --accent:#D85A30;
+    --green:#0F6E56;
+    --green-light:#E1F5EE;
+    --amber:#854F0B;
+    --amber-light:#FAEEDA;
+    --red:#A32D2D;
+    --red-light:#FCEBEB;
+    --blue:#185FA5;
+    --purple:#534AB7;
+    --border:#D9DEE4;
+    --text:#1F2A37;
+    --muted:#5F6B7A;
+    --bg:#F4F6F9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:'Segoe UI',Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    margin:0;
+    padding:20px;
+  }
+  .container{
+    max-width:1200px;
+    margin:0 auto;
+  }
+  .header{
+    background:linear-gradient(135deg,#1F4E79,#2E6DA4);
+    color:#fff;
+    padding:24px 32px;
+    border-radius:12px;
+    margin-bottom:20px;
+  }
+  .header .tag{
+    display:inline-block;
+    background:rgba(255,255,255,0.15);
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:12px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .header h1{margin:0 0 6px; font-size:26px; font-weight:600;}
+  .header p{margin:0; font-size:14px; opacity:0.9; max-width:800px;}
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+    background:#fff;
+    border-radius:10px;
+    padding:6px;
+    border:1px solid var(--border);
+  }
+  .tab-btn{
+    flex:1;
+    padding:10px 16px;
+    border:none;
+    background:transparent;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:600;
+    color:var(--muted);
+    cursor:pointer;
+    transition:all 0.15s;
+  }
+  .tab-btn.active{
+    background:var(--primary);
+    color:#fff;
+  }
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+
+  /* KPI Cards */
+  .kpi-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .kpi-card{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px 18px;
+    border-left:4px solid var(--primary);
+  }
+  .kpi-card .icon{font-size:20px; margin-bottom:6px;}
+  .kpi-card .num{font-size:24px; font-weight:700; color:var(--primary);}
+  .kpi-card .label{font-size:12px; color:var(--muted); margin-top:4px;}
+  .kpi-card.green{border-left-color:var(--green);}
+  .kpi-card.green .num{color:var(--green);}
+  .kpi-card.amber{border-left-color:var(--amber);}
+  .kpi-card.amber .num{color:var(--amber);}
+  .kpi-card.accent{border-left-color:var(--accent);}
+  .kpi-card.accent .num{color:var(--accent);}
+  .kpi-card.purple{border-left-color:var(--purple);}
+  .kpi-card.purple .num{color:var(--purple);}
+  .kpi-card.blue{border-left-color:var(--blue);}
+  .kpi-card.blue .num{color:var(--blue);}
+
+  /* Cards / Panels */
+  .panel{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:20px;
+  }
+  .panel h2{
+    font-size:16px;
+    color:var(--primary);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .panel h2 .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--primary);
+    display:inline-block;
+  }
+
+  .charts-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+  }
+  @media(max-width:800px){
+    .charts-grid{grid-template-columns:1fr;}
+  }
+  .chart-box{position:relative; height:260px;}
+
+  /* Tables */
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  th, td{
+    border:1px solid var(--border);
+    padding:9px 12px;
+    text-align:left;
+  }
+  th{
+    background:var(--primary-light);
+    color:var(--primary);
+    font-weight:600;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.4px;
+    position:sticky;
+    top:0;
+  }
+  tr:nth-child(even) td{background:#FAFBFC;}
+  tr:hover td{background:#F0F6FC;}
+  .table-wrap{overflow-x:auto;}
+
+  .badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:14px;
+    font-size:11px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .badge-active{background:var(--green-light); color:var(--green);}
+  .badge-available{background:var(--amber-light); color:var(--amber);}
+  .badge-bench{background:var(--red-light); color:var(--red);}
+  .badge-proposal{background:#E6F1FB; color:var(--blue);}
+  .badge-discussion{background:var(--amber-light); color:var(--amber);}
+  .badge-negotiation{background:#EEEDFE; color:var(--purple);}
+  .badge-won{background:var(--green-light); color:var(--green);}
+  .badge-lost{background:var(--red-light); color:var(--red);}
+
+  .allocation-bar{
+    width:100%;
+    height:8px;
+    background:#E5E9EE;
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .allocation-bar > div{
+    height:100%;
+    background:var(--primary);
+    border-radius:4px;
+  }
+  .alloc-cell{display:flex; align-items:center; gap:8px;}
+  .alloc-cell span{font-size:12px; font-weight:600; min-width:36px;}
+
+  .filter-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .filter-row select, .filter-row input{
+    padding:8px 12px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    background:#fff;
+  }
+
+  .footer-note{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    padding:16px;
+  }
+  .edit-hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--muted);
+    padding:10px;
+    background:#FFFDE7;
+    border:1px solid #FFE082;
+    border-radius:8px;
+    margin-bottom:14px;
+  }
+  [contenteditable="true"]{outline:none; border-radius:4px;}
+  [contenteditable="true"]:hover{background:#FFF8E1; cursor:text;}
+  [contenteditable="true"]:focus{background:#FFFDE7; box-shadow:0 0 0 2px #FFD54F;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <span class="tag">Demo Dashboard</span>
+    <h1 contenteditable="true">Resource Management & Active Pursuits Dashboard</h1>
+    <p contenteditable="true">This dashboard provides a consolidated view of organizational resources and active business pursuits. It helps management monitor resource utilization, identify available talent, track sales opportunities, and evaluate pipeline performance in real time.</p>
+  </div>
+
+  <div class="edit-hint">✏️ Click any text, table cell, or number to edit it. Use the tabs below to switch views.</div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="showTab('resources')">Resource Management</button>
+    <button class="tab-btn" onclick="showTab('pursuits')">Active Pursuits</button>
+  </div>
+
+  <!-- ============ OVERVIEW TAB ============ -->
+  <div id="overview" class="tab-content active">
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="icon">👥</div>
+        <div class="num" contenteditable="true">150</div>
+        <div class="label">Total Resources</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="icon">✅</div>
+        <div class="num" contenteditable="true">120</div>
+        <div class="label">Active Resources</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="icon">🟡</div>
+        <div class="num" contenteditable="true">30</div>
+        <div class="label">Available Resources</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="icon">📋</div>
+        <div class="num" contenteditable="true">25</div>
+        <div class="label">Total Pursuits</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="icon">🏆</div>
+        <div class="num" contenteditable="true">10</div>
+        <div class="label">Won Opportunities</div>
+      </div>
+      <div class="kpi-card accent">
+        <div class="icon">💰</div>
+        <div class="num" contenteditable="true">₹5 Cr</div>
+        <div class="label">Pipeline Value</div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-grid">
+      <div class="panel">
+        <h2><span class="dot"></span>Resource allocation by department</h2>
+        <div class="chart-box"><canvas id="chartDept"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2><span class="dot"></span>Resource utilization %</h2>
+        <div class="chart-box"><canvas id="chartUtil"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-grid">
+      <div class="panel">
+        <h2><span class="dot"></span>Active pursuits by stage</h2>
+        <div class="chart-box"><canvas id="chartFunnel"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2><span class="dot"></span>Opportunity status distribution</h2>
+        <div class="chart-box"><canvas id="chartDonut"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Charts Row 3 -->
+    <div class="panel">
+      <h2><span class="dot"></span>Monthly pipeline value (₹ Lakhs)</h2>
+      <div class="chart-box"><canvas id="chartPipeline"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- ============ RESOURCE MANAGEMENT TAB ============ -->
+  <div id="resources" class="tab-content">
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="num" contenteditable="true">150</div><div class="label">Total Headcount</div></div>
+      <div class="kpi-card green"><div class="num" contenteditable="true">80%</div><div class="label">Avg. Utilization</div></div>
+      <div class="kpi-card amber"><div class="num" contenteditable="true">30</div><div class="label">On Bench / Available</div></div>
+      <div class="kpi-card purple"><div class="num" contenteditable="true">8</div><div class="label">Departments</div></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="dot"></span>Resource directory</h2>
+      <div class="filter-row">
+        <input type="text" id="resSearch" placeholder="Search by name, skill, project..." onkeyup="filterTable('resTable', this.value)" style="flex:1; min-width:200px;">
+      </div>
+      <div class="table-wrap">
+        <table id="resTable">
+          <thead>
+            <tr>
+              <th>Employee ID</th>
+              <th>Resource Name</th>
+              <th>Department</th>
+              <th>Skill</th>
+              <th>Project Assigned</th>
+              <th>Allocation %</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td contenteditable="true">EMP001</td>
+              <td contenteditable="true">John Doe</td>
+              <td contenteditable="true">Engineering</td>
+              <td contenteditable="true">Python</td>
+              <td contenteditable="true">AI Chatbot</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:100%"></div></div><span contenteditable="true">100%</span></div></td>
+              <td><span class="badge badge-active" contenteditable="true">Active</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP002</td>
+              <td contenteditable="true">David Kumar</td>
+              <td contenteditable="true">Engineering</td>
+              <td contenteditable="true">Java</td>
+              <td contenteditable="true">ERP System</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:75%"></div></div><span contenteditable="true">75%</span></div></td>
+              <td><span class="badge badge-active" contenteditable="true">Active</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP003</td>
+              <td contenteditable="true">Priya S</td>
+              <td contenteditable="true">Analytics</td>
+              <td contenteditable="true">Power BI</td>
+              <td contenteditable="true">Analytics Revamp</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:50%"></div></div><span contenteditable="true">50%</span></div></td>
+              <td><span class="badge badge-available" contenteditable="true">Available</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP004</td>
+              <td contenteditable="true">Anita Desai</td>
+              <td contenteditable="true">Quality</td>
+              <td contenteditable="true">Test Automation</td>
+              <td contenteditable="true">Healthcare Portal</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:90%"></div></div><span contenteditable="true">90%</span></div></td>
+              <td><span class="badge badge-active" contenteditable="true">Active</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP005</td>
+              <td contenteditable="true">Rahul Verma</td>
+              <td contenteditable="true">Cloud / DevOps</td>
+              <td contenteditable="true">AWS, Azure</td>
+              <td contenteditable="true">Inventory System</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:60%"></div></div><span contenteditable="true">60%</span></div></td>
+              <td><span class="badge badge-active" contenteditable="true">Active</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP006</td>
+              <td contenteditable="true">Sneha Iyer</td>
+              <td contenteditable="true">Design</td>
+              <td contenteditable="true">UI/UX</td>
+              <td contenteditable="true">&mdash;</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:0%"></div></div><span contenteditable="true">0%</span></div></td>
+              <td><span class="badge badge-bench" contenteditable="true">On Bench</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP007</td>
+              <td contenteditable="true">Karan Mehta</td>
+              <td contenteditable="true">Engineering</td>
+              <td contenteditable="true">.NET</td>
+              <td contenteditable="true">ERP System</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:100%"></div></div><span contenteditable="true">100%</span></div></td>
+              <td><span class="badge badge-active" contenteditable="true">Active</span></td>
+            </tr>
+            <tr>
+              <td contenteditable="true">EMP008</td>
+              <td contenteditable="true">Megha Rao</td>
+              <td contenteditable="true">Analytics</td>
+              <td contenteditable="true">Tableau, SQL</td>
+              <td contenteditable="true">Retail AI Platform</td>
+              <td><div class="alloc-cell"><div class="allocation-bar"><div style="width:40%"></div></div><span contenteditable="true">40%</span></div></td>
+              <td><span class="badge badge-available" contenteditable="true">Available</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ACTIVE PURSUITS TAB ============ -->
+  <div id="pursuits" class="tab-content">
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="num" contenteditable="true">25</div><div class="label">Total Pursuits</div></div>
+      <div class="kpi-card purple"><div class="num" contenteditable="true">₹5 Cr</div><div class="label">Total Pipeline Value</div></div>
+      <div class="kpi-card green"><div class="num" contenteditable="true">10</div><div class="label">Won</div></div>
+      <div class="kpi-card amber"><div class="num" contenteditable="true">8</div><div class="label">In Negotiation</div></div>
+    </div>
+
+    <div class="panel">
+      <h2><span class="dot"></span>Active pursuits pipeline</h2>
+      <div class="filter-row">
+        <input type="text" id="pursuitSearch" placeholder="Search by opportunity, client, owner..." onkeyup="filterTable('pursuitTable', this.value)" style="flex:1; min-width:200px;">
+      </div>
+      <div class="table-wrap">
+        <table id="pursuitTable">
+          <thead>
+            <tr>
+              <th>Opportunity</th>
+              <th>Client</th>
+              <th>Value (₹)</th>
+              <th>Stage</th>
+              <th>Owner</th>
+              <th>Expected Close Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td contenteditable="true">Retail AI Platform</td>
+              <td contenteditable="true">ABC Corp</td>
+              <td contenteditable="true">25,00,000</td>
+              <td><span class="badge badge-proposal" contenteditable="true">Proposal</span></td>
+              <td contenteditable="true">David Kumar</td>
+              <td contenteditable="true">30-Jul-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Inventory System</td>
+              <td contenteditable="true">XYZ Ltd</td>
+              <td contenteditable="true">15,00,000</td>
+              <td><span class="badge badge-discussion" contenteditable="true">Discussion</span></td>
+              <td contenteditable="true">Priya S</td>
+              <td contenteditable="true">15-Aug-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Healthcare Portal</td>
+              <td contenteditable="true">HealthTech</td>
+              <td contenteditable="true">40,00,000</td>
+              <td><span class="badge badge-negotiation" contenteditable="true">Negotiation</span></td>
+              <td contenteditable="true">John Doe</td>
+              <td contenteditable="true">05-Sep-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Smart Warehouse Solution</td>
+              <td contenteditable="true">LogiCo</td>
+              <td contenteditable="true">30,00,000</td>
+              <td><span class="badge badge-proposal" contenteditable="true">Proposal</span></td>
+              <td contenteditable="true">Rahul Verma</td>
+              <td contenteditable="true">20-Aug-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">HR Analytics Suite</td>
+              <td contenteditable="true">PeopleFirst</td>
+              <td contenteditable="true">12,00,000</td>
+              <td><span class="badge badge-won" contenteditable="true">Won</span></td>
+              <td contenteditable="true">Megha Rao</td>
+              <td contenteditable="true">10-Jun-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Cloud Migration Project</td>
+              <td contenteditable="true">FinServe Bank</td>
+              <td contenteditable="true">55,00,000</td>
+              <td><span class="badge badge-negotiation" contenteditable="true">Negotiation</span></td>
+              <td contenteditable="true">Rahul Verma</td>
+              <td contenteditable="true">28-Sep-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Field Service App</td>
+              <td contenteditable="true">UtilityCo</td>
+              <td contenteditable="true">18,00,000</td>
+              <td><span class="badge badge-lost" contenteditable="true">Lost</span></td>
+              <td contenteditable="true">John Doe</td>
+              <td contenteditable="true">01-Jun-2026</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Chatbot for Banking</td>
+              <td contenteditable="true">NeoBank</td>
+              <td contenteditable="true">20,00,000</td>
+              <td><span class="badge badge-discussion" contenteditable="true">Discussion</span></td>
+              <td contenteditable="true">David Kumar</td>
+              <td contenteditable="true">12-Sep-2026</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-note">Confidential &mdash; Demo Dashboard for Internal Review | Data shown is illustrative (mock data)</div>
+
+</div>
+
+<script>
+  function showTab(id){
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function filterTable(tableId, query){
+    query = query.toLowerCase();
+    const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
+  }
+
+  const colors = {
+    blue:'#378ADD', teal:'#1D9E75', amber:'#EF9F27', coral:'#D85A30',
+    purple:'#7F77DD', pink:'#D4537E', green:'#639922', red:'#E24B4A', gray:'#888780'
+  };
+
+  // 1. Resource allocation by department (Bar)
+  new Chart(document.getElementById('chartDept'), {
+    type: 'bar',
+    data: {
+      labels: ['Engineering','Analytics','Cloud/DevOps','Design','Quality','Sales','HR','Finance'],
+      datasets: [{
+        label: 'Resources Allocated',
+        data: [45, 25, 18, 10, 15, 12, 8, 7],
+        backgroundColor: colors.blue,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true } }
+    }
+  });
+
+  // 2. Resource utilization % (Pie)
+  new Chart(document.getElementById('chartUtil'), {
+    type: 'pie',
+    data: {
+      labels: ['Fully Allocated (100%)','Partially Allocated','Available / Bench'],
+      datasets: [{
+        data: [70, 50, 30],
+        backgroundColor: [colors.teal, colors.amber, colors.red]
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } } }
+    }
+  });
+
+  // 3. Active pursuits by stage (Funnel-style horizontal bar)
+  new Chart(document.getElementById('chartFunnel'), {
+    type: 'bar',
+    data: {
+      labels: ['Lead','Discussion','Proposal','Negotiation','Won'],
+      datasets: [{
+        label: 'Opportunities',
+        data: [25, 18, 12, 8, 10],
+        backgroundColor: [colors.gray, colors.amber, colors.blue, colors.purple, colors.teal],
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{ beginAtZero:true } }
+    }
+  });
+
+  // 4. Opportunity status distribution (Donut)
+  new Chart(document.getElementById('chartDonut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Won','In Progress','Lost'],
+      datasets: [{
+        data: [10, 12, 3],
+        backgroundColor: [colors.teal, colors.blue, colors.red]
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{size:11} } } }
+    }
+  });
+
+  // 5. Monthly pipeline value (Line)
+  new Chart(document.getElementById('chartPipeline'), {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'],
+      datasets: [{
+        label: 'Pipeline Value (₹ Lakhs)',
+        data: [320, 350, 380, 410, 430, 460, 480, 500],
+        borderColor: colors.coral,
+        backgroundColor: 'rgba(216,90,48,0.1)',
+        tension: 0.35,
+        fill: true,
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true } }
+    }
+  });
+</script>
+
+</body>
+</html>
